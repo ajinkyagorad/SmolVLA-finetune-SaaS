@@ -73,7 +73,10 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             "--save_freq=500",
             f"--optimizer.lr=2e-5",
             "--scheduler.type=cosine_decay_with_warmup",
-            f"--scheduler.num_warmup_steps={int(job.steps * 0.03)}"
+            f"--scheduler.num_warmup_steps={int(job.steps * 0.03)}",
+            f"--scheduler.num_decay_steps={job.steps - int(job.steps * 0.03)}",
+            "--scheduler.peak_lr=2e-5",
+            "--scheduler.decay_lr=0"
         ])
         
         # Construct the training command with direct CLI arguments
