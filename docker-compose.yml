@@ -41,7 +41,10 @@ services:
     restart: always
 
   worker:
-    image: smolvla-training-saas:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smolvla-training-saas:dev
     command: celery -A app.celery worker --loglevel=info --concurrency=1
     runtime: nvidia
     environment:
