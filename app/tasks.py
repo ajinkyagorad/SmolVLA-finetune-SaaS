@@ -2,6 +2,7 @@ import os
 import subprocess
 import logging
 import shutil
+import yaml
 from datetime import datetime
 from pathlib import Path
 
@@ -51,25 +52,43 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         if wandb_api_key:
             env['WANDB_API_KEY'] = wandb_api_key
         
-        # Construct the training command
-        # This is based on lerobot's training script for SmolVLA
+        # Create a config file for SmolVLA's dot-notation CLI arguments
+        # Map HuggingFace-style arguments to SmolVLA's expected format
+        config = {
+            "policy": {
+                "type": "smolvla",  # Instead of --model smolvla_base
+                "name": "smolvla_base"
+            },
+            "dataset": {
+                "repo_id": job.dataset_repo_id  # Instead of --dataset
+            },
+            "output_dir": str(output_dir),
+            "steps": job.steps,  # Instead of --max_steps
+            "batch_size": 8,  # Instead of --per_device_train_batch_size
+            "optimizer": {
+                "lr": 2e-5  # Instead of --learning_rate
+            },
+            "scheduler": {
+                "type": "cosine_decay_with_warmup",  # Instead of --lr_scheduler_type cosine
+                "num_warmup_steps": int(job.steps * 0.03)  # Equivalent to --warmup_ratio
+            },
+            "log_freq": 10,  # Instead of --logging_steps
+            "save_checkpoint": True,
+            "save_freq": 500,  # Instead of --save_steps
+            "wandb": {
+                "enable": wandb_api_key is not None  # Instead of --report_to
+            }
+        }
+        
+        # Write config to file
+        config_path = output_dir / "train_config.yaml"
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f)
+        
+        # Construct the training command with config file
         command = [
-            "python", "-m", "lerobot.scripts.train",
-            "--model", "smolvla_base",
-            "--dataset", job.dataset_repo_id,
-            "--output_dir", str(output_dir),
-            "--num_train_epochs", "3",
-            "--max_steps", str(job.steps),
-            "--per_device_train_batch_size", "8",
-            "--gradient_accumulation_steps", "4",
-            "--learning_rate", "2e-5",
-            "--warmup_ratio", "0.03",
-            "--lr_scheduler_type", "cosine",
-            "--logging_steps", "10",
-            "--save_strategy", "steps",
-            "--save_steps", "500",
-            "--save_total_limit", "3",
-            "--report_to", "wandb" if wandb_api_key else "none"
+            "python", "-m", "train",  # Adjust module path as needed
+            "--config_path", str(config_path)
         ]
         
         # Log the command (but mask sensitive tokens)
