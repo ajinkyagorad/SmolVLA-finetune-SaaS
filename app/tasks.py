@@ -61,8 +61,9 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             logger.error(f"Job {job_id} not found in database")
             return {'status': 'failed', 'error': 'Job not found'}
         
-        # Update job status to RUNNING
+        # Update job status to RUNNING and store the task ID
         job.status = 'RUNNING'
+        job.task_id = self.request.id  # Store Celery task ID
         db.session.commit()
         
         # Set up output directory for training results with timestamp to ensure uniqueness
@@ -83,7 +84,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         cli_args = [
             f"--policy.path=lerobot/smolvla_base",  # Use type instead of path
             f"--dataset.repo_id={job.dataset_repo_id}",
-            f"--batch_size=16",
+            f"--batch_size=8",
             f"--steps={job.steps}",
             f"--output_dir={str(output_dir)}",
             f"--job_name={job.id}",  # Use job.id instead of job.name
