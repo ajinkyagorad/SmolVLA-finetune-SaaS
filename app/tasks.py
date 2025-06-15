@@ -42,8 +42,10 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         job.status = 'RUNNING'
         db.session.commit()
         
-        # Create output directory
-        output_dir = Path(os.environ.get('UPLOAD_FOLDER', '/app/training_outputs')) / job_id
+        # Set up output directory for training results with timestamp to ensure uniqueness
+        import time
+        timestamp = int(time.time())
+        output_dir = Path(os.environ.get('UPLOAD_FOLDER', '/app/training_outputs')) / f"{job_id}_{timestamp}"
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Set environment variables for the subprocess
