@@ -89,12 +89,14 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Log the command (for debugging)
         logger.info(f"Training command for job {job_id}: {' '.join(command)}")
         
-        # Conditionally create output directory only if it doesn't exist (avoid wasteful operations)
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
+        # Create a temporary directory for storing logs and command file
+        # This avoids creating the output_dir which the training script expects to create itself
+        temp_dir = Path(os.environ.get('UPLOAD_FOLDER', '/app/training_outputs')) / f"temp_{job_id}_{timestamp}"
+        if not temp_dir.exists():
+            temp_dir.mkdir(parents=True)
         
-        # Write command to a file for reference
-        command_path = output_dir / "train_command.txt"
+        # Write command to a file for reference in the temp directory
+        command_path = temp_dir / "train_command.txt"
         with open(command_path, 'w') as f:
             f.write(' '.join(command))
         
@@ -126,8 +128,8 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Save the full log output
         job.log_output = log_output
         
-        # Also write complete logs to a file for reference
-        log_file = output_dir / "training_log.txt"
+        # Also write complete logs to a file for reference (in temp directory)
+        log_file = temp_dir / "training_log.txt"
         with open(log_file, 'w') as f:
             f.write(f"STDOUT:\n{stdout}\n\nSTDERR:\n{stderr}")
         
@@ -140,9 +142,18 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             logger.error(f"Training failed for job {job_id}")
             # Return a more concise error message but ensure we have the full logs saved
             error_summary = stderr[-1000:] if len(stderr) > 1000 else stderr
-            return {'status': 'failed', 'error': error_summary, 'log_file': str(log_file)}
+            return {'status': 'failed', 'error': error_summary, 'log_file': str(log_file), 'temp_dir': str(temp_dir)}
         
-        # Find the best checkpoint directory
+        # Find the best checkpoint directory - now the output_dir should exist since the training script created it
+        if not output_dir.exists():
+            job.status = 'FAILED'
+            job.end_time = datetime.utcnow()
+            job.log_output += f"\nOutput directory {output_dir} was not created by training script."
+            db.session.commit()
+            logger.error(f"Output directory not created for job {job_id}")
+            return {'status': 'failed', 'error': 'Output directory not created', 'temp_dir': str(temp_dir)}
+            
+        # Look for checkpoints in the output directory
         checkpoints = list(output_dir.glob("checkpoint-*"))
         if not checkpoints:
             job.status = 'FAILED'
@@ -150,7 +161,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             job.log_output += "\nNo checkpoints found after training."
             db.session.commit()
             logger.error(f"No checkpoints found for job {job_id}")
-            return {'status': 'failed', 'error': 'No checkpoints found'}
+            return {'status': 'failed', 'error': 'No checkpoints found', 'temp_dir': str(temp_dir)}
         
         # Sort checkpoints by step number and get the latest
         latest_checkpoint = sorted(checkpoints, key=lambda x: int(x.name.split('-')[1]))[-1]
@@ -198,12 +209,21 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         logger.info(f"Training completed successfully for job {job_id}")
         return {
             'status': 'completed',
-            'model_url': job.model_url
+            'model_url': job.model_url,
+            'temp_dir': str(temp_dir)
         }
         
     except Exception as e:
         logger.exception(f"Unexpected error in train_smolvla task for job {job_id}: {e}")
         
+        # Get the temp_dir if it was created
+        temp_dir_str = None
+        try:
+            if 'temp_dir' in locals() and temp_dir.exists():
+                temp_dir_str = str(temp_dir)
+        except Exception:
+            pass
+            
         # Update job status to FAILED
         try:
             job = TrainingJob.query.get(job_id)
@@ -215,4 +235,4 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         except Exception as db_error:
             logger.error(f"Error updating job status: {db_error}")
         
-        return {'status': 'failed', 'error': str(e)}
+        return {'status': 'failed', 'error': str(e), 'temp_dir': temp_dir_str}
