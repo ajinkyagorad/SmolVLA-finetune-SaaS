@@ -41,7 +41,8 @@ RUN pip install -U huggingface_hub datasets
 # Install newer libstdc++ from conda-forge
 RUN conda install -c conda-forge libstdcxx-ng
 # Copy application code
-COPY app/ ./
+COPY app/ ./app/
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Create directory for training outputs
 RUN mkdir -p /app/training_outputs && chmod 777 /app/training_outputs
