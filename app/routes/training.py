@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
+from celery.task.control import revoke
 
 from ..models import db, TrainingJob
 from ..tasks import train_smolvla
@@ -101,6 +102,38 @@ def job_status(job_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     return jsonify(job.to_dict())
+
+
+@training.route('/api/jobs/<job_id>/terminate', methods=['POST'])
+@login_required
+def terminate_job(job_id):
+    """API endpoint to terminate a running job."""
+    job = TrainingJob.query.get_or_404(job_id)
+    
+    # Check if job belongs to current user
+    if job.user_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    # Check if job can be terminated
+    if job.status not in ['QUEUED', 'RUNNING']:
+        return jsonify({'success': False, 'error': 'Job is not running or queued'}), 400
+    
+    try:
+        # Get the Celery task ID if available
+        task_id = job.task_id
+        
+        if task_id:
+            # Revoke the Celery task with terminate flag
+            revoke(task_id, terminate=True, signal='SIGTERM')
+        
+        # Update job status
+        job.status = 'TERMINATED'
+        job.log_output = (job.log_output or '') + '\n\n[JOB TERMINATED BY USER]'
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @training.route('/api/jobs/<job_id>/logs')

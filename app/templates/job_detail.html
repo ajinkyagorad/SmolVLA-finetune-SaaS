@@ -71,16 +71,26 @@
                     <i class="fas fa-clock me-2"></i>
                     <strong>Job is queued.</strong> Training will begin when GPU resources become available.
                 </div>
-                <div class="progress">
-                    <div class="progress-bar progress-bar-striped bg-secondary" role="progressbar" style="width: 5%"></div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="progress flex-grow-1 me-2">
+                        <div class="progress-bar progress-bar-striped bg-secondary" role="progressbar" style="width: 5%"></div>
+                    </div>
+                    <button id="terminateJob" class="btn btn-sm btn-danger" data-job-id="{{ job.id }}" data-bs-toggle="modal" data-bs-target="#confirmTerminateModal">
+                        <i class="fas fa-stop-circle me-1"></i>Terminate Job
+                    </button>
                 </div>
                 {% elif job.status == 'RUNNING' %}
                 <div class="alert alert-primary">
                     <i class="fas fa-spinner fa-spin me-2"></i>
                     <strong>Job is running.</strong> This page will automatically refresh to show progress.
                 </div>
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="progress flex-grow-1 me-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+                    </div>
+                    <button id="terminateJob" class="btn btn-sm btn-danger" data-job-id="{{ job.id }}" data-bs-toggle="modal" data-bs-target="#confirmTerminateModal">
+                        <i class="fas fa-stop-circle me-1"></i>Terminate Job
+                    </button>
                 </div>
                 {% endif %}
                 
@@ -117,6 +127,29 @@
     </div>
 </div>
 
+<!-- Confirmation Modal for Job Termination -->
+<div class="modal fade" id="confirmTerminateModal" tabindex="-1" aria-labelledby="confirmTerminateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmTerminateModalLabel">Confirm Job Termination</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> Terminating a job will stop the training process immediately. Any progress will be lost and cannot be resumed.
+                </div>
+                <p>Are you sure you want to terminate this job?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmTerminate">Terminate Job</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Log viewer controls and real-time updates -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -128,11 +161,14 @@
         const clearLogsBtn = document.getElementById('clearLogs');
         const decreaseFontSizeBtn = document.getElementById('decreaseFontSize');
         const increaseFontSizeBtn = document.getElementById('increaseFontSize');
+        const terminateJobBtn = document.getElementById('terminateJob');
+        const confirmTerminateBtn = document.getElementById('confirmTerminate');
         
         // Variables
         let autoScroll = true;
         let currentFontSize = 0.85; // rem
         let lastLogLength = logContent ? logContent.textContent.length : 0;
+        let jobId = "{{ job.id }}";
         
         // Initialize
         if (logContainer) {
@@ -170,6 +206,51 @@
                     currentFontSize += 0.05;
                     logContainer.style.fontSize = currentFontSize + 'rem';
                 }
+            });
+        }
+        
+        // Job termination handling
+        if (confirmTerminateBtn) {
+            confirmTerminateBtn.addEventListener('click', function() {
+                // Disable button and show loading state
+                confirmTerminateBtn.disabled = true;
+                confirmTerminateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Terminating...';
+                
+                // Send termination request
+                fetch(`{{ url_for('training.terminate_job', job_id='') }}${jobId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close modal and reload page
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmTerminateModal'));
+                        modal.hide();
+                        
+                        // Show success message and reload
+                        alert('Job termination request sent successfully. The page will now reload.');
+                        window.location.reload();
+                    } else {
+                        // Show error
+                        alert(`Error: ${data.error || 'Failed to terminate job'}`);
+                        
+                        // Reset button
+                        confirmTerminateBtn.disabled = false;
+                        confirmTerminateBtn.innerHTML = 'Terminate Job';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error terminating job:', error);
+                    alert('An error occurred while trying to terminate the job. Please try again.');
+                    
+                    // Reset button
+                    confirmTerminateBtn.disabled = false;
+                    confirmTerminateBtn.innerHTML = 'Terminate Job';
+                });
             });
         }
         

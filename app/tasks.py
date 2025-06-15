@@ -132,11 +132,71 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            bufsize=1  # Line buffered
         )
         
-        # Capture output
-        stdout, stderr = process.communicate()
+        # Collect output in real-time and update logs periodically
+        stdout_lines = []
+        stderr_lines = []
+        import select
+        import time
+        
+        # Poll for output with timeout
+        poll_obj = select.poll()
+        poll_obj.register(process.stdout, select.POLLIN)
+        poll_obj.register(process.stderr, select.POLLIN)
+        
+        # Track last update time
+        last_update_time = time.time()
+        update_interval = 2.0  # Update logs every 2 seconds
+        
+        # Continue while process is running
+        while process.poll() is None:
+            # Check for available output
+            for fd, event in poll_obj.poll(500):  # 500ms timeout
+                if fd == process.stdout.fileno() and event & select.POLLIN:
+                    line = process.stdout.readline()
+                    if line:
+                        stdout_lines.append(line)
+                elif fd == process.stderr.fileno() and event & select.POLLIN:
+                    line = process.stderr.readline()
+                    if line:
+                        stderr_lines.append(line)
+            
+            # Update logs periodically
+            current_time = time.time()
+            if current_time - last_update_time >= update_interval:
+                # Combine current output
+                current_stdout = ''.join(stdout_lines)
+                current_stderr = ''.join(stderr_lines)
+                
+                # Sanitize and create log output
+                max_stdout_size = 50000
+                sanitized_stdout = sanitize_string(current_stdout[:max_stdout_size])
+                sanitized_stderr = sanitize_string(current_stderr)
+                
+                log_output = f"STDOUT:\n{sanitized_stdout}"
+                if len(current_stdout) > max_stdout_size:
+                    log_output += "\n...(stdout truncated)..."
+                
+                log_output += f"\n\nSTDERR:\n{sanitized_stderr}"
+                
+                # Update job log in database
+                job.log_output = log_output
+                db.session.commit()
+                
+                # Update timestamp
+                last_update_time = current_time
+        
+        # Collect any remaining output
+        remaining_stdout, remaining_stderr = process.communicate()
+        stdout_lines.append(remaining_stdout)
+        stderr_lines.append(remaining_stderr)
+        
+        # Combine all output
+        stdout = ''.join(stdout_lines)
+        stderr = ''.join(stderr_lines)
         
         # Store logs - keep full stderr for debugging but limit stdout if needed
         max_stdout_size = 50000  # Increased maximum characters to store for stdout
@@ -152,7 +212,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Always include the full stderr for debugging
         log_output += f"\n\nSTDERR:\n{sanitized_stderr}"
         
-        # Save the full log output
+        # Save the final log output
         job.log_output = log_output
         
         # Also write complete logs to a file for reference (in temp directory)
