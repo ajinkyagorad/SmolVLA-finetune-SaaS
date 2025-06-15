@@ -3,6 +3,7 @@ import subprocess
 import logging
 import shutil
 import yaml
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -82,7 +83,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         cli_args = [
             f"--policy.path=lerobot/smolvla_base",  # Use type instead of path
             f"--dataset.repo_id={job.dataset_repo_id}",
-            f"--batch_size=64",
+            f"--batch_size=16",
             f"--steps={job.steps}",
             f"--output_dir={str(output_dir)}",
             f"--job_name={job.id}",  # Use job.id instead of job.name

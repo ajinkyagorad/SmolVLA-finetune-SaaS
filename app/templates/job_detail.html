@@ -85,8 +85,26 @@
                 {% endif %}
                 
                 {% if job.log_output %}
-                <div class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow-y: auto;">
-                    <pre><code>{{ job.log_output }}</code></pre>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <button id="toggleAutoScroll" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-scroll me-1"></i>Auto-scroll: <span id="autoScrollStatus">ON</span>
+                        </button>
+                        <button id="clearLogs" class="btn btn-sm btn-outline-secondary ms-2">
+                            <i class="fas fa-eraser me-1"></i>Clear View
+                        </button>
+                    </div>
+                    <div>
+                        <button id="decreaseFontSize" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button id="increaseFontSize" class="btn btn-sm btn-outline-secondary ms-1">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="logContainer" class="bg-dark text-light p-3 rounded" style="height: 500px; overflow-y: auto; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 0.85rem;">
+                    <pre id="logContent" style="margin-bottom: 0;"><code>{{ job.log_output }}</code></pre>
                 </div>
                 {% elif job.status not in ['QUEUED', 'RUNNING'] %}
                 <div class="alert alert-info">
@@ -99,30 +117,97 @@
     </div>
 </div>
 
-{% if job.status in ['QUEUED', 'RUNNING'] %}
-<!-- Auto-refresh script for active jobs -->
+<!-- Log viewer controls and real-time updates -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Refresh the page every 15 seconds for active jobs
-        setTimeout(function() {
-            window.location.reload();
-        }, 15000);
+        // Elements
+        const logContainer = document.getElementById('logContainer');
+        const logContent = document.getElementById('logContent');
+        const toggleAutoScrollBtn = document.getElementById('toggleAutoScroll');
+        const autoScrollStatus = document.getElementById('autoScrollStatus');
+        const clearLogsBtn = document.getElementById('clearLogs');
+        const decreaseFontSizeBtn = document.getElementById('decreaseFontSize');
+        const increaseFontSizeBtn = document.getElementById('increaseFontSize');
         
-        // AJAX status update
-        function updateJobStatus() {
-            fetch('{{ url_for("training.job_status", job_id=job.id) }}')
+        // Variables
+        let autoScroll = true;
+        let currentFontSize = 0.85; // rem
+        let lastLogLength = logContent ? logContent.textContent.length : 0;
+        
+        // Initialize
+        if (logContainer) {
+            // Scroll to bottom initially
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Auto-scroll toggle
+            toggleAutoScrollBtn.addEventListener('click', function() {
+                autoScroll = !autoScroll;
+                autoScrollStatus.textContent = autoScroll ? 'ON' : 'OFF';
+                if (autoScroll) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            });
+            
+            // Clear logs view
+            clearLogsBtn.addEventListener('click', function() {
+                const shouldClear = confirm('This will clear the log view (not the actual logs). Continue?');
+                if (shouldClear && logContent) {
+                    logContent.textContent = '';
+                    lastLogLength = 0;
+                }
+            });
+            
+            // Font size controls
+            decreaseFontSizeBtn.addEventListener('click', function() {
+                if (currentFontSize > 0.6) {
+                    currentFontSize -= 0.05;
+                    logContainer.style.fontSize = currentFontSize + 'rem';
+                }
+            });
+            
+            increaseFontSizeBtn.addEventListener('click', function() {
+                if (currentFontSize < 1.2) {
+                    currentFontSize += 0.05;
+                    logContainer.style.fontSize = currentFontSize + 'rem';
+                }
+            });
+        }
+        
+        // Real-time log updates for active jobs
+        {% if job.status in ['QUEUED', 'RUNNING'] %}
+        function updateJobLogs() {
+            fetch('{{ url_for("training.job_logs", job_id=job.id) }}')
                 .then(response => response.json())
                 .then(data => {
+                    if (logContent && data.log_output) {
+                        // Only update if there are new logs
+                        if (data.log_output.length > lastLogLength) {
+                            logContent.textContent = data.log_output;
+                            lastLogLength = data.log_output.length;
+                            
+                            // Auto-scroll to bottom if enabled
+                            if (autoScroll) {
+                                logContainer.scrollTop = logContainer.scrollHeight;
+                            }
+                        }
+                    }
+                    
+                    // Check if job status changed
                     if (data.status !== '{{ job.status }}') {
                         window.location.reload();
                     }
                 })
-                .catch(error => console.error('Error fetching job status:', error));
+                .catch(error => console.error('Error fetching job logs:', error));
         }
         
-        // Check status every 5 seconds
-        setInterval(updateJobStatus, 5000);
+        // Update logs every 2 seconds
+        setInterval(updateJobLogs, 2000);
+        
+        // Full page refresh every 60 seconds as fallback
+        setTimeout(function() {
+            window.location.reload();
+        }, 60000);
+        {% endif %}
     });
 </script>
-{% endif %}
 {% endblock %}

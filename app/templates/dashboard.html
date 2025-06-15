@@ -3,95 +3,137 @@
 {% block title %}SmolVLA Training SaaS - Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Dashboard</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold mb-0">Dashboard</h1>
+    <a href="{{ url_for('training.train') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>New Training Job
+    </a>
+</div>
 
-<div class="row mb-4">
+<div class="row g-4 mb-5">
     <div class="col-md-3">
-        <div class="card text-white bg-secondary h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">{{ queued_count }}</h2>
-                <p class="card-text">Queued Jobs</p>
-                <i class="fas fa-clock fa-3x"></i>
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-gradient-header rounded-circle mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-clock fa-lg text-white"></i>
+                </div>
+                <h2 class="display-5 fw-bold mb-0">{{ queued_count }}</h2>
+                <p class="text-muted mb-0">Queued Jobs</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 py-3">
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-primary h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">{{ running_count }}</h2>
-                <p class="card-text">Running Jobs</p>
-                <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-gradient-header rounded-circle mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-spinner fa-spin fa-lg text-white"></i>
+                </div>
+                <h2 class="display-5 fw-bold mb-0">{{ running_count }}</h2>
+                <p class="text-muted mb-0">Running Jobs</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 py-3">
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar" style="width: 100%; background-color: var(--primary-color);"></div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">{{ completed_count }}</h2>
-                <p class="card-text">Completed Jobs</p>
-                <i class="fas fa-check-circle fa-3x"></i>
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-gradient-header rounded-circle mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-check-circle fa-lg text-white"></i>
+                </div>
+                <h2 class="display-5 fw-bold mb-0">{{ completed_count }}</h2>
+                <p class="text-muted mb-0">Completed Jobs</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 py-3">
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-danger h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">{{ failed_count }}</h2>
-                <p class="card-text">Failed Jobs</p>
-                <i class="fas fa-exclamation-triangle fa-3x"></i>
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-gradient-header rounded-circle mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-exclamation-triangle fa-lg text-white"></i>
+                </div>
+                <h2 class="display-5 fw-bold mb-0">{{ failed_count }}</h2>
+                <p class="text-muted mb-0">Failed Jobs</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 py-3">
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Recent Training Jobs</h3>
-        <a href="{{ url_for('training.train') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i>New Training Job
-        </a>
+<div class="card border-0 shadow-sm mb-5">
+    <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+        <h3 class="fw-bold mb-0">Recent Training Jobs</h3>
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
         {% if recent_jobs %}
         <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
+            <table class="table align-middle">
+                <thead class="table-light">
                     <tr>
-                        <th>Job ID</th>
-                        <th>Dataset</th>
-                        <th>Output Model</th>
-                        <th>Status</th>
-                        <th>Started</th>
-                        <th>Actions</th>
+                        <th class="border-0">Job ID</th>
+                        <th class="border-0">Dataset</th>
+                        <th class="border-0">Output Model</th>
+                        <th class="border-0">Status</th>
+                        <th class="border-0">Started</th>
+                        <th class="border-0 text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in recent_jobs %}
                     <tr>
-                        <td>{{ job.id[:8] }}...</td>
-                        <td>{{ job.dataset_repo_id }}</td>
-                        <td>{{ job.output_repo_id }}</td>
+                        <td class="fw-medium">{{ job.id[:8] }}...</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-database me-2 text-muted"></i>
+                                <span>{{ job.dataset_repo_id }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-cube me-2 text-muted"></i>
+                                <span>{{ job.output_repo_id }}</span>
+                            </div>
+                        </td>
                         <td>
                             {% if job.status == 'QUEUED' %}
-                            <span class="badge bg-secondary">Queued</span>
+                            <span class="badge rounded-pill bg-secondary">Queued</span>
                             {% elif job.status == 'RUNNING' %}
-                            <span class="badge bg-primary">Running</span>
+                            <span class="badge rounded-pill" style="background-color: var(--primary-color);">Running</span>
                             {% elif job.status == 'COMPLETED' %}
-                            <span class="badge bg-success">Completed</span>
+                            <span class="badge rounded-pill bg-success">Completed</span>
                             {% elif job.status == 'FAILED' %}
-                            <span class="badge bg-danger">Failed</span>
+                            <span class="badge rounded-pill bg-danger">Failed</span>
                             {% elif job.status == 'COMPLETED_WITH_ERRORS' %}
-                            <span class="badge bg-warning">Completed with Errors</span>
+                            <span class="badge rounded-pill bg-warning">Completed with Errors</span>
+                            {% else %}
+                            <span class="badge rounded-pill bg-secondary">{{ job.status }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ job.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>
-                            <a href="{{ url_for('training.job_detail', job_id=job.id) }}" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i> View
+                        <td>{{ job.start_time.strftime('%Y-%m-%d %H:%M') if job.start_time else 'N/A' }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('training.job_detail', job_id=job.id) }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                <i class="fas fa-eye me-1"></i> View
                             </a>
                             {% if job.model_url %}
-                            <a href="{{ job.model_url }}" target="_blank" class="btn btn-sm btn-success">
-                                <i class="fas fa-external-link-alt"></i> Model
+                            <a href="{{ job.model_url }}" target="_blank" class="btn btn-sm btn-success rounded-pill">
+                                <i class="fas fa-external-link-alt me-1"></i> Model
                             </a>
                             {% endif %}
                         </td>
@@ -114,28 +156,42 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Quick Tips</h3>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+        <h3 class="fw-bold mb-0">Quick Tips</h3>
     </div>
-    <div class="card-body">
-        <div class="row">
+    <div class="card-body p-4">
+        <div class="row g-4">
             <div class="col-md-6">
-                <h5><i class="fas fa-lightbulb text-warning me-2"></i>Dataset Format</h5>
-                <p>Make sure your Hugging Face dataset follows the format expected by SmolVLA. It should contain:</p>
-                <ul>
-                    <li>Input images in the correct format</li>
-                    <li>Properly formatted labels</li>
-                </ul>
+                <div class="tip-card p-4 rounded-4" style="background-color: rgba(var(--accent-color-rgb), 0.05); border-left: 4px solid var(--accent-color);">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style="width: 40px; height: 40px; background-color: var(--accent-color);">
+                            <i class="fas fa-database text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-0">Dataset Format</h5>
+                    </div>
+                    <p>Make sure your Hugging Face dataset follows the format expected by SmolVLA. It should contain:</p>
+                    <ul class="ps-3">
+                        <li class="mb-2">Input images in the correct format</li>
+                        <li>Properly formatted labels</li>
+                    </ul>
+                </div>
             </div>
             <div class="col-md-6">
-                <h5><i class="fas fa-lightbulb text-warning me-2"></i>Training Steps</h5>
-                <p>For best results:</p>
-                <ul>
-                    <li>Start with 1000 steps for quick testing</li>
-                    <li>Use 3000-5000 steps for production models</li>
-                    <li>Monitor training progress with Weights & Biases</li>
-                </ul>
+                <div class="tip-card p-4 rounded-4" style="background-color: rgba(var(--accent-color-rgb), 0.05); border-left: 4px solid var(--accent-color);">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style="width: 40px; height: 40px; background-color: var(--accent-color);">
+                            <i class="fas fa-cogs text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-0">Training Steps</h5>
+                    </div>
+                    <p>For best results:</p>
+                    <ul class="ps-3">
+                        <li class="mb-2">Start with 1000 steps for quick testing</li>
+                        <li class="mb-2">Use 3000-5000 steps for production models</li>
+                        <li>Monitor training progress with Weights & Biases</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
