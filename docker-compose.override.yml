@@ -6,5 +6,5 @@ services:
       context: .
       dockerfile: Dockerfile
     image: smolvla-training-saas:dev
-    volumes:
-      - .:/app
+    # Keep the original volume mount for training-output
+    # Don't override the existing volumes, just add to them
