@@ -45,6 +45,9 @@ services:
     image: smolvla-training-saas:dev
     command: celery -A app.celery worker --loglevel=info --concurrency=1
     runtime: nvidia
+    volumes:
+      - ./app:/app/app  # Mount local app directory to container
+      - training-output:/app/training_outputs
     environment:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgrespassword
