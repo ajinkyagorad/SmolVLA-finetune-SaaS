@@ -47,7 +47,7 @@ services:
     runtime: nvidia
     volumes:
       - ./app:/app/app  # Mount local app directory to container
-      - training-output:/app/training_outputs
+      - training-output:/training-output
     environment:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgrespassword
@@ -58,8 +58,6 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - ENCRYPTION_KEY=PN_oQgmR8ynpSCRJB3TrxN_K1ZZbH_7UZQfbdFQgS-E=
       - UPLOAD_FOLDER=/training-output
-    volumes:
-      - training-output:/training-output
     depends_on:
       - postgres
       - redis
