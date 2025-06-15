@@ -101,3 +101,20 @@ def job_status(job_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     return jsonify(job.to_dict())
+
+
+@training.route('/api/jobs/<job_id>/logs')
+@login_required
+def job_logs(job_id):
+    """API endpoint to get job logs for real-time updates."""
+    job = TrainingJob.query.get_or_404(job_id)
+    
+    # Check if job belongs to current user
+    if job.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Return both status and logs for efficiency
+    return jsonify({
+        'status': job.status,
+        'log_output': job.log_output or ''
+    })

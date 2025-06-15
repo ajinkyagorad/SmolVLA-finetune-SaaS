@@ -174,40 +174,43 @@
         }
         
         // Real-time log updates for active jobs
-        {% if job.status in ['QUEUED', 'RUNNING'] %}
-        function updateJobLogs() {
-            fetch('{{ url_for("training.job_logs", job_id=job.id) }}')
-                .then(response => response.json())
-                .then(data => {
-                    if (logContent && data.log_output) {
-                        // Only update if there are new logs
-                        if (data.log_output.length > lastLogLength) {
-                            logContent.textContent = data.log_output;
-                            lastLogLength = data.log_output.length;
-                            
-                            // Auto-scroll to bottom if enabled
-                            if (autoScroll) {
-                                logContainer.scrollTop = logContainer.scrollHeight;
+        const jobStatus = "{{ job.status }}";
+        const jobLogsUrl = "{{ url_for('training.job_logs', job_id=job.id) }}";
+        
+        if (jobStatus === 'QUEUED' || jobStatus === 'RUNNING') {
+            function updateJobLogs() {
+                fetch(jobLogsUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (logContent && data.log_output) {
+                            // Only update if there are new logs
+                            if (data.log_output.length > lastLogLength) {
+                                logContent.textContent = data.log_output;
+                                lastLogLength = data.log_output.length;
+                                
+                                // Auto-scroll to bottom if enabled
+                                if (autoScroll) {
+                                    logContainer.scrollTop = logContainer.scrollHeight;
+                                }
                             }
                         }
-                    }
-                    
-                    // Check if job status changed
-                    if (data.status !== '{{ job.status }}') {
-                        window.location.reload();
-                    }
-                })
-                .catch(error => console.error('Error fetching job logs:', error));
+                        
+                        // Check if job status changed
+                        if (data.status !== jobStatus) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => console.error('Error fetching job logs:', error));
+            }
+            
+            // Update logs every 2 seconds
+            setInterval(updateJobLogs, 2000);
+            
+            // Full page refresh every 60 seconds as fallback
+            setTimeout(function() {
+                window.location.reload();
+            }, 60000);
         }
-        
-        // Update logs every 2 seconds
-        setInterval(updateJobLogs, 2000);
-        
-        // Full page refresh every 60 seconds as fallback
-        setTimeout(function() {
-            window.location.reload();
-        }, 60000);
-        {% endif %}
     });
 </script>
 {% endblock %}
