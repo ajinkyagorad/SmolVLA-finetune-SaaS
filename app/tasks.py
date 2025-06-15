@@ -52,44 +52,41 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         if wandb_api_key:
             env['WANDB_API_KEY'] = wandb_api_key
         
-        # Create a config file for SmolVLA's dot-notation CLI arguments
-        # Map HuggingFace-style arguments to SmolVLA's expected format
-        config = {
-            "policy": {
-                "type": "smolvla",  # Instead of --model smolvla_base
-                "name": "smolvla_base"
-            },
-            "dataset": {
-                "repo_id": job.dataset_repo_id  # Instead of --dataset
-            },
-            "output_dir": str(output_dir),
-            "steps": job.steps,  # Instead of --max_steps
-            "batch_size": 8,  # Instead of --per_device_train_batch_size
-            "optimizer": {
-                "lr": 2e-5  # Instead of --learning_rate
-            },
-            "scheduler": {
-                "type": "cosine_decay_with_warmup",  # Instead of --lr_scheduler_type cosine
-                "num_warmup_steps": int(job.steps * 0.03)  # Equivalent to --warmup_ratio
-            },
-            "log_freq": 10,  # Instead of --logging_steps
-            "save_checkpoint": True,
-            "save_freq": 500,  # Instead of --save_steps
-            "wandb": {
-                "enable": wandb_api_key is not None  # Instead of --report_to
-            }
-        }
-        
-        # Write config to file
-        config_path = output_dir / "train_config.yaml"
-        with open(config_path, 'w') as f:
-            yaml.dump(config, f)
-        
-        # Construct the training command with config file
-        command = [
-            "python", "-m", "lerobot.scripts.train",  # Using the original module path
-            "--config_path", str(config_path)
+        # Create CLI arguments for SmolVLA's dot-notation format based on Google Colab example
+        # Instead of using a config file, we'll pass these directly to the command
+        cli_args = [
+            f"--policy.path=lerobot/smolvla_base",
+            f"--dataset.repo_id={job.dataset_repo_id}",
+            f"--batch_size=8",
+            f"--steps={job.steps}",
+            f"--output_dir={str(output_dir)}",
+            f"--job_name={job.name}",
+            f"--policy.device=cuda",
+            f"--wandb.enable={'true' if wandb_api_key is not None else 'false'}"
         ]
+        
+        # Add optional parameters
+        cli_args.extend([
+            "--log_freq=10",
+            "--save_checkpoint=true",
+            "--save_freq=500",
+            f"--optimizer.lr=2e-5",
+            "--scheduler.type=cosine_decay_with_warmup",
+            f"--scheduler.num_warmup_steps={int(job.steps * 0.03)}"
+        ])
+        
+        # Construct the training command with direct CLI arguments
+        command = [
+            "python", "-m", "lerobot.scripts.train"
+        ] + cli_args
+        
+        # Log the command (for debugging)
+        logger.info(f"Training command for job {job_id}: {' '.join(command)}")
+        
+        # Write command to a file for reference
+        command_path = output_dir / "train_command.txt"
+        with open(command_path, 'w') as f:
+            f.write(' '.join(command))
         
         # Log the command (but mask sensitive tokens)
         logger.info(f"Running training command for job {job_id}")
