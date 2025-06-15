@@ -56,7 +56,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Instead of using a config file, we'll pass these directly to the command
         # Note: Removed policy.name as it's not a valid field for SmolVLAConfig
         cli_args = [
-            f"--policy.type=smolvla",  # Use type instead of path
+            f"--policy.path=lerobot/smolvla_base",  # Use type instead of path
             f"--dataset.repo_id={job.dataset_repo_id}",
             f"--batch_size=8",
             f"--steps={job.steps}",
