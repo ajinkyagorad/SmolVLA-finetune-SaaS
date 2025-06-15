@@ -150,42 +150,49 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         
         # Track last update time
         last_update_time = time.time()
-        update_interval = 2.0  # Update logs every 2 seconds
+        update_interval = 0.5  # Update logs more frequently (every 0.5 seconds)
+        
+        # Initialize log buffer for immediate display
+        log_buffer = []
         
         # Continue while process is running
         while process.poll() is None:
             # Check for available output
-            for fd, event in poll_obj.poll(500):  # 500ms timeout
+            for fd, event in poll_obj.poll(100):  # 100ms timeout for more responsive polling
                 if fd == process.stdout.fileno() and event & select.POLLIN:
                     line = process.stdout.readline()
                     if line:
                         stdout_lines.append(line)
+                        log_buffer.append(f"[STDOUT] {line.rstrip()}")
                 elif fd == process.stderr.fileno() and event & select.POLLIN:
                     line = process.stderr.readline()
                     if line:
                         stderr_lines.append(line)
+                        log_buffer.append(f"[STDERR] {line.rstrip()}")
             
-            # Update logs periodically
+            # Update logs periodically or when buffer reaches threshold
             current_time = time.time()
-            if current_time - last_update_time >= update_interval:
-                # Combine current output
-                current_stdout = ''.join(stdout_lines)
-                current_stderr = ''.join(stderr_lines)
+            if current_time - last_update_time >= update_interval or len(log_buffer) >= 10:
+                # Get existing log if any
+                existing_log = job.log_output or ""
                 
-                # Sanitize and create log output
-                max_stdout_size = 50000
-                sanitized_stdout = sanitize_string(current_stdout[:max_stdout_size])
-                sanitized_stderr = sanitize_string(current_stderr)
-                
-                log_output = f"STDOUT:\n{sanitized_stdout}"
-                if len(current_stdout) > max_stdout_size:
-                    log_output += "\n...(stdout truncated)..."
-                
-                log_output += f"\n\nSTDERR:\n{sanitized_stderr}"
-                
-                # Update job log in database
-                job.log_output = log_output
-                db.session.commit()
+                # Format new log entries from buffer
+                if log_buffer:
+                    new_log_entries = "\n".join(log_buffer)
+                    log_buffer = []  # Clear buffer after processing
+                    
+                    # Append new entries to existing log
+                    # If existing log is empty, just use new entries
+                    # Otherwise append with a newline separator
+                    if existing_log:
+                        updated_log = existing_log + "\n" + new_log_entries
+                    else:
+                        updated_log = new_log_entries
+                    
+                    # Sanitize and update log in database
+                    sanitized_log = sanitize_string(updated_log)
+                    job.log_output = sanitized_log
+                    db.session.commit()
                 
                 # Update timestamp
                 last_update_time = current_time

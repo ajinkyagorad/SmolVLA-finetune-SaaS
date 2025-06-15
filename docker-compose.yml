@@ -43,8 +43,11 @@ services:
       context: .
       dockerfile: Dockerfile
     image: smolvla-training-saas:dev
-    command: celery -A app.celery worker --loglevel=info --concurrency=1
+    command: celery -A app.celery worker --loglevel=info --concurrency=1 --pool=solo
     runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - ./app:/app/app  # Mount local app directory to container
       - training-output:/training-output
