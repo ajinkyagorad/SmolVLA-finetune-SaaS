@@ -46,7 +46,9 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         import time
         timestamp = int(time.time())
         output_dir = Path(os.environ.get('UPLOAD_FOLDER', '/app/training_outputs')) / f"{job_id}_{timestamp}"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        # Note: We don't create the directory here as the SmolVLA training script will create it
+        # This avoids creating the directory multiple times
+        # output_dir.mkdir(parents=True, exist_ok=True)
         
         # Set environment variables for the subprocess
         env = os.environ.copy()
@@ -96,6 +98,9 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         
         # Log the command (but mask sensitive tokens)
         logger.info(f"Running training command for job {job_id}")
+        
+        # Ensure the parent directory exists (but not the output_dir itself)
+        output_dir.parent.mkdir(parents=True, exist_ok=True)
         
         # Execute the training process
         process = subprocess.Popen(
