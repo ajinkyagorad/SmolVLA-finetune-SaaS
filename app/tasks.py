@@ -18,6 +18,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def sanitize_string(s):
+    """
+    Sanitize a string by removing NUL characters and other problematic characters
+    that might cause database issues.
+    
+    Args:
+        s (str): The string to sanitize
+        
+    Returns:
+        str: The sanitized string
+    """
+    if not isinstance(s, str):
+        return s
+    
+    # Remove NUL (0x00) characters
+    s = s.replace('\x00', '')
+    
+    # Replace other potentially problematic control characters
+    s = re.sub(r'[\x01-\x08\x0B\x0C\x0E-\x1F]', '', s)
+    
+    return s
+
 @shared_task(bind=True, name='train_smolvla')
 def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
     """
@@ -118,12 +140,16 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Store logs - keep full stderr for debugging but limit stdout if needed
         max_stdout_size = 50000  # Increased maximum characters to store for stdout
         # Always store the full stderr for error diagnosis
-        log_output = f"STDOUT:\n{stdout[:max_stdout_size]}"
+        # Sanitize stdout and stderr to remove NUL characters before saving to database
+        sanitized_stdout = sanitize_string(stdout[:max_stdout_size])
+        sanitized_stderr = sanitize_string(stderr)
+        
+        log_output = f"STDOUT:\n{sanitized_stdout}"
         if len(stdout) > max_stdout_size:
             log_output += "\n...(stdout truncated)..."
         
         # Always include the full stderr for debugging
-        log_output += f"\n\nSTDERR:\n{stderr}"
+        log_output += f"\n\nSTDERR:\n{sanitized_stderr}"
         
         # Save the full log output
         job.log_output = log_output
@@ -142,13 +168,15 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             logger.error(f"Training failed for job {job_id}")
             # Return a more concise error message but ensure we have the full logs saved
             error_summary = stderr[-1000:] if len(stderr) > 1000 else stderr
-            return {'status': 'failed', 'error': error_summary, 'log_file': str(log_file), 'temp_dir': str(temp_dir)}
+            # Sanitize the error summary before returning
+            sanitized_error = sanitize_string(error_summary)
+            return {'status': 'failed', 'error': sanitized_error, 'log_file': str(log_file), 'temp_dir': str(temp_dir)}
         
         # Find the best checkpoint directory - now the output_dir should exist since the training script created it
         if not output_dir.exists():
             job.status = 'FAILED'
             job.end_time = datetime.utcnow()
-            job.log_output += f"\nOutput directory {output_dir} was not created by training script."
+            job.log_output = sanitize_string(job.log_output + f"\nOutput directory {output_dir} was not created by training script.")
             db.session.commit()
             logger.error(f"Output directory not created for job {job_id}")
             return {'status': 'failed', 'error': 'Output directory not created', 'temp_dir': str(temp_dir)}
@@ -158,7 +186,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         if not checkpoints:
             job.status = 'FAILED'
             job.end_time = datetime.utcnow()
-            job.log_output += "\nNo checkpoints found after training."
+            job.log_output = sanitize_string(job.log_output + "\nNo checkpoints found in output directory.")
             db.session.commit()
             logger.error(f"No checkpoints found for job {job_id}")
             return {'status': 'failed', 'error': 'No checkpoints found', 'temp_dir': str(temp_dir)}
@@ -194,12 +222,13 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             job.model_url = f"https://huggingface.co/{job.output_repo_id}"
             
         except Exception as e:
-            logger.error(f"Error uploading model to Hugging Face Hub: {e}")
-            job.log_output += f"\nError uploading model: {str(e)}"
+            error_msg = sanitize_string(str(e))
+            logger.error(f"Error uploading model to Hugging Face Hub: {error_msg}")
+            job.log_output = sanitize_string(job.log_output + f"\nError uploading model: {error_msg}")
             job.status = 'COMPLETED_WITH_ERRORS'
             job.end_time = datetime.utcnow()
             db.session.commit()
-            return {'status': 'completed_with_errors', 'error': str(e)}
+            return {'status': 'completed_with_errors', 'error': error_msg}
         
         # Update job status to COMPLETED
         job.status = 'COMPLETED'
