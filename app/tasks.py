@@ -61,7 +61,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
             f"--batch_size=8",
             f"--steps={job.steps}",
             f"--output_dir={str(output_dir)}",
-            f"--job_name={job.name}",
+            f"--job_name={job.id}",  # Use job.id instead of job.name
             f"--policy.device=cuda",
             f"--wandb.enable={'true' if wandb_api_key is not None else 'false'}"
         ]
