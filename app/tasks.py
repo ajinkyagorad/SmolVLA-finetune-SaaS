@@ -54,8 +54,9 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         
         # Create CLI arguments for SmolVLA's dot-notation format based on Google Colab example
         # Instead of using a config file, we'll pass these directly to the command
+        # Note: Removed policy.name as it's not a valid field for SmolVLAConfig
         cli_args = [
-            f"--policy.path=lerobot/smolvla_base",
+            f"--policy.type=smolvla",  # Use type instead of path
             f"--dataset.repo_id={job.dataset_repo_id}",
             f"--batch_size=8",
             f"--steps={job.steps}",
