@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">User Profile</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.profile') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                        <div class="form-text">Username cannot be changed.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                        <div class="form-text">Leave blank to keep your current password.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hf_token" class="form-label">Hugging Face Token</label>
+                        <input type="password" class="form-control" id="hf_token" name="hf_token" placeholder="{% if current_user.encrypted_hf_token %}••••••••••••••••{% else %}No token set{% endif %}">
+                        <div class="form-text">
+                            {% if current_user.encrypted_hf_token %}
+                            Leave blank to keep your current token. Enter a new token to update.
+                            {% else %}
+                            <span class="text-danger">You need to add a Hugging Face token to use the training features.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="wandb_api_key" class="form-label">Weights & Biases API Key</label>
+                        <input type="password" class="form-control" id="wandb_api_key" name="wandb_api_key" placeholder="{% if current_user.encrypted_wandb_api_key %}••••••••••••••••{% else %}No API key set{% endif %}">
+                        <div class="form-text">
+                            {% if current_user.encrypted_wandb_api_key %}
+                            Leave blank to keep your current API key. Enter a new key to update.
+                            {% else %}
+                            Optional: Add a Weights & Biases API key to track your training runs.
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

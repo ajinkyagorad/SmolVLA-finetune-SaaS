@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - My Jobs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>My Training Jobs</h1>
+    <a href="{{ url_for('training.train') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>New Training Job
+    </a>
+</div>
+
+{% if jobs %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Dataset</th>
+                        <th>Output Model</th>
+                        <th>Steps</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>Completed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>{{ job.id[:8] }}...</td>
+                        <td>{{ job.dataset_repo_id }}</td>
+                        <td>{{ job.output_repo_id }}</td>
+                        <td>{{ job.steps }}</td>
+                        <td>
+                            {% if job.status == 'QUEUED' %}
+                            <span class="badge bg-secondary">Queued</span>
+                            {% elif job.status == 'RUNNING' %}
+                            <span class="badge bg-primary">Running</span>
+                            {% elif job.status == 'COMPLETED' %}
+                            <span class="badge bg-success">Completed</span>
+                            {% elif job.status == 'FAILED' %}
+                            <span class="badge bg-danger">Failed</span>
+                            {% elif job.status == 'COMPLETED_WITH_ERRORS' %}
+                            <span class="badge bg-warning">Completed with Errors</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ job.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if job.end_time %}
+                            {{ job.end_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('training.job_detail', job_id=job.id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            {% if job.model_url %}
+                            <a href="{{ job.model_url }}" target="_blank" class="btn btn-sm btn-success">
+                                <i class="fas fa-external-link-alt"></i> Model
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh script for jobs that are running or queued -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasActiveJobs = {{ 'true' if jobs|selectattr('status', 'in', ['QUEUED', 'RUNNING'])|list|length > 0 else 'false' }};
+        
+        if (hasActiveJobs) {
+            // Refresh the page every 30 seconds if there are active jobs
+            setTimeout(function() {
+                window.location.reload();
+            }, 30000);
+        }
+    });
+</script>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
+        <h3>No Training Jobs Found</h3>
+        <p class="mb-4">You haven't submitted any training jobs yet.</p>
+        <a href="{{ url_for('training.train') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Start Your First Training Job
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

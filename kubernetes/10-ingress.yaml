@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smolvla-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Optional: Add SSL/TLS annotations if needed
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  # Optional: Configure TLS
+  # tls:
+  # - hosts:
+  #   - smolvla-training.example.com
+  #   secretName: smolvla-tls-secret
+  rules:
+  - host: smolvla-training.example.com  # Replace with your actual domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: smolvla-webapp-service
+            port:
+              number: 80

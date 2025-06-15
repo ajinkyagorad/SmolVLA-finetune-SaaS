@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - Job Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Job Details</h1>
+    <a href="{{ url_for('training.jobs') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Back to Jobs
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Job Information</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Job ID:</strong> <code>{{ job.id }}</code></p>
+                <p><strong>Status:</strong> 
+                    {% if job.status == 'QUEUED' %}
+                    <span class="badge bg-secondary">Queued</span>
+                    {% elif job.status == 'RUNNING' %}
+                    <span class="badge bg-primary">Running</span>
+                    {% elif job.status == 'COMPLETED' %}
+                    <span class="badge bg-success">Completed</span>
+                    {% elif job.status == 'FAILED' %}
+                    <span class="badge bg-danger">Failed</span>
+                    {% elif job.status == 'COMPLETED_WITH_ERRORS' %}
+                    <span class="badge bg-warning">Completed with Errors</span>
+                    {% endif %}
+                </p>
+                <p><strong>Dataset:</strong> <a href="https://huggingface.co/datasets/{{ job.dataset_repo_id }}" target="_blank">{{ job.dataset_repo_id }}</a></p>
+                <p><strong>Output Model:</strong> 
+                    {% if job.model_url %}
+                    <a href="{{ job.model_url }}" target="_blank">{{ job.output_repo_id }}</a>
+                    {% else %}
+                    {{ job.output_repo_id }}
+                    {% endif %}
+                </p>
+                <p><strong>Training Steps:</strong> {{ job.steps }}</p>
+                <p><strong>Started:</strong> {{ job.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                <p><strong>Completed:</strong> 
+                    {% if job.end_time %}
+                    {{ job.end_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </p>
+                
+                {% if job.model_url %}
+                <div class="d-grid mt-4">
+                    <a href="{{ job.model_url }}" target="_blank" class="btn btn-success">
+                        <i class="fas fa-external-link-alt me-1"></i>View Model on Hugging Face
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Training Logs</h3>
+            </div>
+            <div class="card-body">
+                {% if job.status == 'QUEUED' %}
+                <div class="alert alert-secondary">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Job is queued.</strong> Training will begin when GPU resources become available.
+                </div>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped bg-secondary" role="progressbar" style="width: 5%"></div>
+                </div>
+                {% elif job.status == 'RUNNING' %}
+                <div class="alert alert-primary">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    <strong>Job is running.</strong> This page will automatically refresh to show progress.
+                </div>
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+                </div>
+                {% endif %}
+                
+                {% if job.log_output %}
+                <div class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow-y: auto;">
+                    <pre><code>{{ job.log_output }}</code></pre>
+                </div>
+                {% elif job.status not in ['QUEUED', 'RUNNING'] %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No log output available.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if job.status in ['QUEUED', 'RUNNING'] %}
+<!-- Auto-refresh script for active jobs -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Refresh the page every 15 seconds for active jobs
+        setTimeout(function() {
+            window.location.reload();
+        }, 15000);
+        
+        // AJAX status update
+        function updateJobStatus() {
+            fetch('{{ url_for("training.job_status", job_id=job.id) }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status !== '{{ job.status }}') {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error('Error fetching job status:', error));
+        }
+        
+        // Check status every 5 seconds
+        setInterval(updateJobStatus, 5000);
+    });
+</script>
+{% endif %}
+{% endblock %}

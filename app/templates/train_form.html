@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - Train Model{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Train SmolVLA Model</h3>
+            </div>
+            <div class="card-body">
+                {% if not current_user.encrypted_hf_token %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> You need to add your Hugging Face token in your 
+                    <a href="{{ url_for('auth.profile') }}">profile</a> before you can train models.
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('training.train') }}">
+                    <div class="mb-3">
+                        <label for="dataset_repo_id" class="form-label">Hugging Face Dataset Repository ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="dataset_repo_id" name="dataset_repo_id" 
+                               placeholder="username/dataset-name" required
+                               {% if not current_user.encrypted_hf_token %}disabled{% endif %}>
+                        <div class="form-text">
+                            Enter the full repository ID of your dataset on Hugging Face (e.g., "username/my-dataset").
+                            Make sure your dataset is properly formatted for SmolVLA training.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="output_repo_id" class="form-label">Output Model Repository ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="output_repo_id" name="output_repo_id" 
+                               placeholder="username/model-name" required
+                               {% if not current_user.encrypted_hf_token %}disabled{% endif %}>
+                        <div class="form-text">
+                            Enter the repository ID where you want the trained model to be uploaded (e.g., "username/my-finetuned-smolvla").
+                            If the repository doesn't exist, it will be created automatically.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="steps" class="form-label">Training Steps</label>
+                        <input type="number" class="form-control" id="steps" name="steps" value="1000" min="100" max="10000"
+                               {% if not current_user.encrypted_hf_token %}disabled{% endif %}>
+                        <div class="form-text">
+                            Number of training steps (100-10000). Recommended values:
+                            <ul>
+                                <li>1000: Quick testing</li>
+                                <li>3000: Decent results for most datasets</li>
+                                <li>5000+: Best quality, longer training time</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Training Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Model:</strong> smolvla_base</p>
+                            <p><strong>Batch Size:</strong> 8</p>
+                            <p><strong>Learning Rate:</strong> 2e-5</p>
+                            <p><strong>Gradient Accumulation Steps:</strong> 4</p>
+                            <p><strong>LR Scheduler:</strong> cosine</p>
+                            <p><strong>Warmup Ratio:</strong> 0.03</p>
+                            <p class="mb-0 text-muted">These parameters are optimized for SmolVLA fine-tuning and cannot be changed.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Training will be performed on a single A100 GPU. Your job will be queued if all GPUs are currently in use.
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" {% if not current_user.encrypted_hf_token %}disabled{% endif %}>
+                            <i class="fas fa-play me-2"></i>Start Training
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

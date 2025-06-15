@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - Home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4">Fine-tune SmolVLA Models on Your Data</h1>
+        <p class="lead mb-4">
+            SmolVLA Training SaaS allows you to fine-tune lerobot's SmolVLA models on your own Hugging Face datasets using A100 GPUs.
+            Get started in minutes and deploy your models directly to robots.
+        </p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('training.train') }}" class="btn btn-primary btn-lg px-4 me-md-2">Start Training</a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg px-4">View Dashboard</a>
+            {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 me-md-2">Register Now</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/robot.png" class="img-fluid rounded" alt="Robot Image">
+    </div>
+</div>
+
+<hr class="my-5">
+
+<div class="row g-4 py-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">GPU-Accelerated</h3>
+                <p class="card-text">Train your models on A100 GPUs for maximum performance and efficiency.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">Secure</h3>
+                <p class="card-text">Your Hugging Face tokens and API keys are encrypted at rest and never exposed.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">Direct Upload</h3>
+                <p class="card-text">Trained models are automatically uploaded to your Hugging Face account.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">How It Works</h2>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <h3 class="m-0">1</h3>
+                    </div>
+                    <h4>Register</h4>
+                    <p>Create an account and add your Hugging Face token.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <h3 class="m-0">2</h3>
+                    </div>
+                    <h4>Configure</h4>
+                    <p>Specify your dataset and desired output model repository.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <h3 class="m-0">3</h3>
+                    </div>
+                    <h4>Train</h4>
+                    <p>Submit your job and monitor progress in real-time.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <h3 class="m-0">4</h3>
+                    </div>
+                    <h4>Deploy</h4>
+                    <p>Use your fine-tuned model directly from Hugging Face.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

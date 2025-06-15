@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}SmolVLA Training SaaS - Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Register</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.register') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text">Password must be at least 8 characters long.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hf_token" class="form-label">Hugging Face Token <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="hf_token" name="hf_token" required>
+                        <div class="form-text">
+                            Your Hugging Face token is required for accessing datasets and uploading models.
+                            You can create one at <a href="https://huggingface.co/settings/tokens" target="_blank">https://huggingface.co/settings/tokens</a>.
+                            This token will be encrypted and stored securely.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="wandb_api_key" class="form-label">Weights & Biases API Key (Optional)</label>
+                        <input type="password" class="form-control" id="wandb_api_key" name="wandb_api_key">
+                        <div class="form-text">
+                            Optional: Provide a Weights & Biases API key to track your training runs.
+                            You can create one at <a href="https://wandb.ai/settings" target="_blank">https://wandb.ai/settings</a>.
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
