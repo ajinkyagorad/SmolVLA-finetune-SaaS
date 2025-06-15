@@ -106,21 +106,34 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         # Capture output
         stdout, stderr = process.communicate()
         
-        # Store logs (truncate if too large)
-        max_log_size = 10000  # Maximum characters to store
-        log_output = f"STDOUT:\n{stdout[:max_log_size]}\n\nSTDERR:\n{stderr[:max_log_size]}"
-        if len(stdout) > max_log_size or len(stderr) > max_log_size:
-            log_output += "\n...(truncated)..."
+        # Store logs - keep full stderr for debugging but limit stdout if needed
+        max_stdout_size = 50000  # Increased maximum characters to store for stdout
+        # Always store the full stderr for error diagnosis
+        log_output = f"STDOUT:\n{stdout[:max_stdout_size]}"
+        if len(stdout) > max_stdout_size:
+            log_output += "\n...(stdout truncated)..."
         
+        # Always include the full stderr for debugging
+        log_output += f"\n\nSTDERR:\n{stderr}"
+        
+        # Save the full log output
         job.log_output = log_output
+        
+        # Also write complete logs to a file for reference
+        log_file = output_dir / "training_log.txt"
+        with open(log_file, 'w') as f:
+            f.write(f"STDOUT:\n{stdout}\n\nSTDERR:\n{stderr}")
         
         # Check if training was successful
         if process.returncode != 0:
             job.status = 'FAILED'
             job.end_time = datetime.utcnow()
             db.session.commit()
-            logger.error(f"Training failed for job {job_id}: {stderr}")
-            return {'status': 'failed', 'error': stderr}
+            # Log the full error for debugging
+            logger.error(f"Training failed for job {job_id}")
+            # Return a more concise error message but ensure we have the full logs saved
+            error_summary = stderr[-1000:] if len(stderr) > 1000 else stderr
+            return {'status': 'failed', 'error': error_summary, 'log_file': str(log_file)}
         
         # Find the best checkpoint directory
         checkpoints = list(output_dir.glob("checkpoint-*"))
