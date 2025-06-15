@@ -87,7 +87,7 @@ def train_smolvla(self, job_id, hf_token, wandb_api_key=None):
         
         # Construct the training command with config file
         command = [
-            "python", "-m", "train",  # Adjust module path as needed
+            "python", "-m", "lerobot.scripts.train",  # Using the original module path
             "--config_path", str(config_path)
         ]
         
